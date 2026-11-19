@@ -12,12 +12,15 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -131,15 +134,12 @@ class SubjectControllerTest {
                 .andExpect(jsonPath("$.length()").value(0));
     }
 
-
-    //Aufgabe2.5.2
+//Aufgabe2.5.2
     //Ergänze den SubjectControllerTest um Tests für PUT /api/subjects/{id} und DELETE /api/subjects/{id}, jeweils für den Erfolgsfall (200 bzw. 204) und für eine unbekannte ID (404). Ein ungültiger Name bei PUT liefert 400.
     @Test
     void put_validName_returns200() throws Exception {
-        mockMvc.perform(post("/api/subjects")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"Mathe\"}"))
-                .andExpect(status().isCreated());
+        when(service.update(1L, new CreateSubjectRequest("Deutsch")))
+                .thenReturn(new SubjectResponse(1L, "Deutsch"));
 
         mockMvc.perform(put("/api/subjects/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -147,5 +147,45 @@ class SubjectControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.name").value("Deutsch"));
+
+        verify(service).update(1L, new CreateSubjectRequest("Deutsch"));
+    }
+
+    @Test
+    void put_unknownId_returns404() throws Exception {
+        when(service.update(99L, new CreateSubjectRequest("Deutsch")))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(put("/api/subjects/99")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Deutsch\"}"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void put_blankName_returns400AndDoesNotCallService() throws Exception {
+        mockMvc.perform(put("/api/subjects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"   \"}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void delete_existingId_returns204() throws Exception {
+        mockMvc.perform(delete("/api/subjects/1"))
+                .andExpect(status().isNoContent());
+
+        verify(service).delete(1L);
+    }
+
+    @Test
+    void delete_unknownId_returns404() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND))
+                .when(service).delete(99L);
+
+        mockMvc.perform(delete("/api/subjects/99"))
+                .andExpect(status().isNotFound());
     }
 }

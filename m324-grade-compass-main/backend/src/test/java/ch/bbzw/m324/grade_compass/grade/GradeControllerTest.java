@@ -1,60 +1,82 @@
 package ch.bbzw.m324.grade_compass.grade;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(GradeController.class)
 class GradeControllerTest {
 
-@Mock
-private GradeRepository repository;
+    @Autowired
+    private MockMvc mockMvc;
 
-@InjectMocks
-private GradeController service;
-//POST /api/grades mit gültigem Body liefert 201 und die erstellte Note
-@Test
-void create_savesGradeAndReturnsResponse(){
-    when(repository.save(any(Grade.class))).thenAnswer(inv -> inv.getArgument(0));
+    @MockitoBean
+    private GradeService service;
 
-    GradeResponse response = service.create(new CreateGradeRequest(1L, 5.5));
+    @Test
+    void post_validBody_returns201AndCreatedGrade() throws Exception {
+        when(service.create(any(CreateGradeRequest.class)))
+                .thenReturn(new GradeResponse(1L, 2L, 5.5));
 
-    assertThat(response.subjectId()).isEqualTo(1L);
-    assertThat(response.value()).isEqualTo(5.5);
-    verify(repository).save(any(Grade.class));
+        mockMvc.perform(post("/api/grades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subjectId\":2,\"value\":5.5}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.subjectId").value(2))
+                .andExpect(jsonPath("$.value").value(5.5));
+
+        verify(service).create(new CreateGradeRequest(2L, 5.5));
+    }
+
+    @Test
+    void post_missingSubjectId_returns400AndDoesNotCallService() throws Exception {
+        mockMvc.perform(post("/api/grades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"value\":5.5}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void post_missingValue_returns400AndDoesNotCallService() throws Exception {
+        mockMvc.perform(post("/api/grades")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subjectId\":2}"))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void get_returnsAllGrades() throws Exception {
+        when(service.findAll()).thenReturn(List.of(
+                new GradeResponse(1L, 2L, 5.5),
+                new GradeResponse(2L, 3L, 4.0)));
+
+        mockMvc.perform(get("/api/grades"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(1))
+                .andExpect(jsonPath("$[0].subjectId").value(2))
+                .andExpect(jsonPath("$[0].value").value(5.5))
+                .andExpect(jsonPath("$[1].value").value(4.0));
+
+        verify(service).findAll();
+    }
 }
-//POST /api/grades ohne subjectId oder ohne value liefert 400, der Service wird nicht aufgerufen
-@Test
-void create_badreQuestesdontsaveAndReturnsRespnse() {
-    assertThatThrownBy(() -> service.create(new CreateGradeRequest(1L, 7.0)))
-            .isInstanceOfSatisfying(ResponseStatusException.class,
-                    e -> assertThat(e.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST));
-
-    verify(repository, never()).save(any());
-
-
-}
-//GET /api/grades liefert alle Noten
-@Test
-void findAllGrades_mapsEntitiesToResponses() {
-    when(repository.findAll()).thenReturn(List.of(new Grade(1L, 4.0), new Grade(2L, 5.5)));
-
-    List<GradeResponse> result = service.findAll();
-
-    assertThat(result).extracting(GradeResponse::value).containsExactly(4.0, 5.5);
-}
-
-
