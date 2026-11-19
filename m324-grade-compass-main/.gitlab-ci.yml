@@ -1,0 +1,8 @@
+stages:
+  - log
+
+log-commit-id:
+  stage: log
+  script:
+    - 'echo "Current commit ID: $CI_COMMIT_SHA"'
+    - 'echo "Short commit ID: $CI_COMMIT_SHORT_SHA"'

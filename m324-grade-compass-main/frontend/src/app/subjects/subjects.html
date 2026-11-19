@@ -1,0 +1,53 @@
+<main class="subjects">
+  <h1>Fächer</h1>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  <form class="add" (ngSubmit)="add()">
+    <input
+      name="newName"
+      [(ngModel)]="newName"
+      placeholder="Neues Fach"
+      maxlength="100"
+      aria-label="Name des neuen Fachs"
+      required
+    />
+    <button type="submit" [disabled]="!newName.trim()">Hinzufügen</button>
+  </form>
+
+  @if (loading() && subjects().length === 0) {
+    <p>Lade…</p>
+  } @else if (subjects().length === 0) {
+    <p class="empty">Noch keine Fächer vorhanden.</p>
+  } @else {
+    <ul>
+      @for (subject of subjects(); track subject.id) {
+        <li>
+          @if (editingId() === subject.id) {
+            <form class="edit" (ngSubmit)="saveEdit(subject)">
+              <input
+                name="editName"
+                [(ngModel)]="editName"
+                maxlength="100"
+                aria-label="Neuer Name"
+                required
+              />
+              <button type="submit" [disabled]="!editName.trim()">Speichern</button>
+              <button type="button" class="secondary" (click)="cancelEdit()">Abbrechen</button>
+            </form>
+          } @else {
+            <span class="name">{{ subject.name }}</span>
+            <span class="actions">
+              <button type="button" class="secondary" (click)="startEdit(subject)">
+                Bearbeiten
+              </button>
+              <button type="button" class="danger" (click)="remove(subject)">Löschen</button>
+            </span>
+          }
+        </li>
+      }
+    </ul>
+  }
+</main>

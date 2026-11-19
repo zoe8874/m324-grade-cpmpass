@@ -1,0 +1,21 @@
+services:
+  sonarqube:
+    image: sonarqube:26.11.0.134175-community
+    container_name: sonarqube
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    networks:
+      - sonar-net
+
+networks:
+  sonar-net:
+    name: sonar-net
+
+volumes:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:

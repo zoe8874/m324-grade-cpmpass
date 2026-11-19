@@ -1,0 +1,72 @@
+<main class="dashboard">
+  <h1>Notenübersicht</h1>
+
+  <p class="links">
+    <a routerLink="/subjects">Fächer verwalten</a>
+    <a routerLink="/grades">Noten erfassen</a>
+  </p>
+
+  @if (error()) {
+    <p class="error" role="alert">
+      {{ error() }}
+      <button type="button" class="secondary" (click)="load()">Erneut versuchen</button>
+    </p>
+  }
+
+  @if (orphanCount() > 0) {
+    <p class="warning" role="status">
+      {{ orphanCount() }} Note(n) gehören zu einem gelöschten Fach und werden nicht angezeigt.
+    </p>
+  }
+
+  @if (loading() && subjects().length === 0) {
+    <p>Lade…</p>
+  } @else if (subjects().length === 0) {
+    <p class="empty">
+      Noch keine Fächer vorhanden. <a routerLink="/subjects">Lege zuerst ein Fach an.</a>
+    </p>
+  } @else {
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Fach</th>
+          <th scope="col" class="num">Noten</th>
+          <th scope="col" class="num">Schnitt</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.subject.id) {
+          <tr>
+            <td>
+              <a routerLink="/grades" [queryParams]="{ subject: row.subject.id }">{{
+                row.subject.name
+              }}</a>
+            </td>
+            <td class="num">{{ row.count }}</td>
+            <td class="num">
+              @if (row.average === null) {
+                <span class="none" title="Noch keine Note erfasst">–</span>
+              } @else {
+                <span [class.fail]="row.average < passGrade">{{ row.average | number: '1.2-2' }}</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colspan="2">Gesamtschnitt</th>
+          <td class="num">
+            @let total = overall();
+            @if (total === null) {
+              <span class="none">–</span>
+            } @else {
+              <strong [class.fail]="total < passGrade">{{ total | number: '1.2-2' }}</strong>
+            }
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    <p class="hint">Ungewichteter Durchschnitt. Ab {{ passGrade | number: '1.1-1' }} ist ein Fach genügend.</p>
+  }
+</main>

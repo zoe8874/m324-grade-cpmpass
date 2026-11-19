@@ -1,0 +1,27 @@
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+import { Subject, SubjectRequest } from './subject.model';
+
+@Injectable({ providedIn: 'root' })
+export class SubjectService {
+  private readonly http = inject(HttpClient);
+  private readonly baseUrl = `${environment.apiUrl.replace(/\/+$/, '')}/api/subjects`;
+
+  getAll(): Observable<Subject[]> {
+    return this.http.get<Subject[]>(this.baseUrl);
+  }
+
+  create(request: SubjectRequest): Observable<Subject> {
+    return this.http.post<Subject>(this.baseUrl, request);
+  }
+
+  update(id: number, request: SubjectRequest): Observable<Subject> {
+    return this.http.put<Subject>(`${this.baseUrl}/${id}`, request);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${id}`);
+  }
+}

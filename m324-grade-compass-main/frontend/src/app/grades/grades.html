@@ -1,0 +1,67 @@
+<main class="grades">
+  <h1>Noten</h1>
+
+  <p class="links"><a routerLink="/">Zur Übersicht</a></p>
+
+  @if (error()) {
+    <p class="error" role="alert">{{ error() }}</p>
+  }
+
+  @if (loading() && subjects().length === 0) {
+    <p>Lade…</p>
+  } @else if (subjects().length === 0) {
+    <p class="empty">
+      Noch keine Fächer vorhanden. <a routerLink="/subjects">Lege zuerst ein Fach an,</a> um Noten zu erfassen.
+    </p>
+  } @else {
+    <form class="add" (ngSubmit)="add()">
+      <select
+        name="subjectId"
+        [(ngModel)]="selectedSubjectId"
+        aria-label="Fach"
+        required
+      >
+        @for (subject of subjects(); track subject.id) {
+          <option [ngValue]="subject.id">{{ subject.name }}</option>
+        }
+      </select>
+      <input
+        type="number"
+        name="value"
+        [(ngModel)]="newValue"
+        [min]="minGrade"
+        [max]="maxGrade"
+        step="0.01"
+        placeholder="Note ({{ minGrade }}–{{ maxGrade }})"
+        aria-label="Note"
+        required
+      />
+      <button type="submit" [disabled]="!canAdd">Hinzufügen</button>
+    </form>
+
+    @for (group of groups(); track group.subject.id) {
+      <section>
+        <h2>
+          {{ group.subject.name }}
+          <span class="avg" [class.fail]="group.average !== null && group.average < passGrade">
+            @if (group.average === null) {
+              –
+            } @else {
+              Ø {{ group.average | number: '1.2-2' }}
+            }
+          </span>
+        </h2>
+        @if (group.grades.length == 0) {
+          <p class="empty">Noch keine Note erfasst.</p>
+        } @else {
+          <ul>
+            @for (grade of group.grades; track grade.id) {
+              <li [class.fail]="grade.value < passGrade">{{ grade.value | number: '1.1-2' }}</li>
+            }
+          </ul>
+        }
+      </section>
+    }
+    <p class="hint">Noten lassen sich aktuell nur erfassen, nicht ändern oder löschen (kein Backend-Endpunkt).</p>
+  }
+</main>
