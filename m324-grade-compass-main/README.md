@@ -120,7 +120,7 @@ In einem zweiten Terminal:
 ```bash
 cd frontend
 npm install
-npm run start
+npm start
 ```
 
 Das Frontend läuft danach auf <http://localhost:4200>.
