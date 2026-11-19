@@ -130,4 +130,22 @@ class SubjectControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
+
+
+    //Aufgabe2.5.2
+    //Ergänze den SubjectControllerTest um Tests für PUT /api/subjects/{id} und DELETE /api/subjects/{id}, jeweils für den Erfolgsfall (200 bzw. 204) und für eine unbekannte ID (404). Ein ungültiger Name bei PUT liefert 400.
+    @Test
+    void put_validName_returns200() throws Exception {
+        mockMvc.perform(post("/api/subjects")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Mathe\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(put("/api/subjects/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Deutsch\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(1))
+                .andExpect(jsonPath("$.name").value("Deutsch"));
+    }
 }
